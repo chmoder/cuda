@@ -1,3 +1,4 @@
+```
 Example Compilation
 15:53:44 **** Incremental Build of configuration Debug for project PasswordChecker ****
 make all 
@@ -13,3 +14,4 @@ Invoking: NVCC Linker
 Finished building target: PasswordChecker
 
 This CUDA code as been checking arround 32,499,876 passwords per second
+```
