@@ -20,8 +20,7 @@ static void CheckCudaErrorAux (const char *, unsigned, const char *, cudaError_t
 /*
  * The password in question
  * */
-__constant__ char password[5] = "Erin";
-
+__constant__ char password[16];
 
 /**
  * CUDA kernel copies one string buffer to another
@@ -147,7 +146,7 @@ char *checkPasswordHost(int iteration)
 	static const int BLOCK_COUNT = deviceProp.multiProcessorCount;
 	//static const int THREAD_COUNT = 1024;
 	//static const int BLOCK_COUNT = 16;
-	static const int TOTAL_THREADS = THREAD_COUNT * BLOCK_COUNT;
+	//static const int TOTAL_THREADS = THREAD_COUNT * BLOCK_COUNT;
 	static const int SIZE = 8;
 	char *converted_string = new char[SIZE];
 	//char **converted_strings;
@@ -189,6 +188,12 @@ int main(void)
     char *answer_password;
     answer_password = new char[1];
     answer_password[0] = '\0';
+    std::string temp_password;
+
+	std::cout << "Please enter a password to find: ";
+	getline(std::cin, temp_password);
+	CUDA_CHECK_RETURN(cudaMemcpyToSymbol(password, temp_password.c_str(), sizeof(char) * 16));
+	std::cout << "searching for \"" << temp_password.c_str() << "\"..." << std::endl;
 
     while(answer_password[0] == '\0' && iteration < max_iterations)
 	{
@@ -227,4 +232,5 @@ static void CheckCudaErrorAux (const char *file, unsigned line, const char *stat
 	std::cerr << statement<<" returned " << cudaGetErrorString(err) << "("<<err<< ") at "<<file<<":"<<line << std::endl;
 	exit (1);
 }
+
 
