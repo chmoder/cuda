@@ -13,5 +13,5 @@ Invoking: NVCC Linker
 /usr/local/cuda-7.5/bin/nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_52,code=compute_52 -gencode arch=compute_52,code=sm_52 -m64 -link -o  "PasswordChecker"  ./src/PasswordChecker.o   
 Finished building target: PasswordChecker
 
-This CUDA code as been checking arround 32,499,876 passwords per second
+Using shared memory and registers I have been measuring about 32,499,876 password generations and comparisons per second
 ```
