@@ -1,10 +1,10 @@
 /*
  ============================================================================
  Name        : PasswordChecker.cu
- Author      : Tom
+ Author      : Thomas Cross
  Version     : 0.0.1
  Copyright   : This is free.  Do with it as you please
- Description : CUDA compute passwords
+ Description : CUDA password generator and checker
  ============================================================================
  */
 
@@ -127,7 +127,7 @@ __global__ void universalCheckPasswordShared(char *return_guess, const int strin
  * Created n streams where n = number of multiprocessors * 8 (peformance degrades after this point on my GTX)
  * thread count per kernel is your max threads / 2
  * block count is the number of multiprocessors you have
- * Using shared register memory I have been seeing about 32,499,876 password generations and comparisons per second
+ * Using shared register memory I have been measuring about 32,499,876 password generations and comparisons per second
  */
 char *checkPasswordHost(int iteration)
 {
