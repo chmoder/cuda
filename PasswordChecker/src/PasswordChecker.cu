@@ -50,9 +50,9 @@ __device__ int strcmpDevice(const char * s1, const char * s2)
  * found this online somewhere
  */
 __device__ char *convertBase(long number_to_convert, int base) {
-	   __shared__ int converted_number[8];
-	   //char *converted_string = new char[8];
-	   __shared__ char converted_string[8];
+	   __shared__ int converted_number[16];
+	   //char *converted_string = new char[16];
+	   __shared__ char converted_string[16];
 	   int index = 0;
 
 	   /* convert to the indicated base */
@@ -107,8 +107,8 @@ __global__ void checkPasswordShared(char *return_guess, const int string_size, c
 	int codex_for_printf = idx + (total_threads * iteration);
 	const int base = (int)'~'+1;
 
-	int converted_number[8];
-	char converted_string[8];
+	int converted_number[16];
+	char converted_string[16];
 
     convertBase(converted_string, converted_number, codex, base);
 
@@ -117,8 +117,6 @@ __global__ void checkPasswordShared(char *return_guess, const int string_size, c
 		printf("%d,%d,%d,%d,%d,%d, %s == %s\n", codex_for_printf, blockIdx.x, blockDim.x, threadIdx.x, total_threads, iteration, converted_string, password);
 		return_guess = strcpyDevice(return_guess, converted_string);
 	}
-
-
 }
 
 /**
@@ -182,9 +180,8 @@ char *checkPasswordHost(int iteration)
 
 int main(void)
 {
-	time_t start = time(0);
     int iteration = 0;
-    int max_iterations = 1000000;
+    int max_iterations = 100000000;
     char *answer_password;
     answer_password = new char[1];
     answer_password[0] = '\0';
@@ -195,6 +192,7 @@ int main(void)
 	CUDA_CHECK_RETURN(cudaMemcpyToSymbol(password, temp_password.c_str(), sizeof(char) * 16));
 	std::cout << "searching for \"" << temp_password.c_str() << "\"..." << std::endl;
 
+	time_t start = time(0);
     while(answer_password[0] == '\0' && iteration < max_iterations)
 	{
 		delete[] answer_password;
