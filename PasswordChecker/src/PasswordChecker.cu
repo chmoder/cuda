@@ -101,7 +101,7 @@ __device__ void convertBase(char converted_string[], int converted_number[], int
 	   }
 }
 
-__global__ void universalCheckPasswordShared(char *return_guess, const int string_size, const int iteration) {
+__global__ void checkPasswordShared(char *return_guess, const int string_size, const int iteration) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int total_threads = blockDim.x * gridDim.x;
 	int codex = idx + (total_threads * iteration);
@@ -150,22 +150,22 @@ char *checkPasswordHost(int iteration)
 	static const int TOTAL_THREADS = THREAD_COUNT * BLOCK_COUNT;
 	static const int SIZE = 8;
 	char *converted_string = new char[SIZE];
-	char **converted_strings;
-	int **converted_numbers;
+	//char **converted_strings;
+	//int **converted_numbers;
 	// This is the variable that the data will be reutrned to.  It is shared amongst all the threads and streams.
 	char *gpuData;
 
 	for(int i = 0; i < SIZE; ++i)
 		converted_string[i] = '\0';
 
-	CUDA_CHECK_RETURN(cudaMalloc((void **)&converted_strings, sizeof(char*)*TOTAL_THREADS));
-	CUDA_CHECK_RETURN(cudaMalloc((void **)&converted_numbers, sizeof(int*)*TOTAL_THREADS));
+	//CUDA_CHECK_RETURN(cudaMalloc((void **)&converted_strings, sizeof(char*)*TOTAL_THREADS));
+	//CUDA_CHECK_RETURN(cudaMalloc((void **)&converted_numbers, sizeof(int*)*TOTAL_THREADS));
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuData, sizeof(char)*SIZE));
 	CUDA_CHECK_RETURN(cudaMemcpy(gpuData, converted_string, sizeof(char)*SIZE, cudaMemcpyHostToDevice));
 
 	for(int i = 0; i < STREAM_COUNT; ++i)
 	{
-		universalCheckPasswordShared<<<BLOCK_COUNT, THREAD_COUNT, 0, streams[i]>>> (gpuData, SIZE, (iteration * STREAM_COUNT) + i);
+		checkPasswordShared<<<BLOCK_COUNT, THREAD_COUNT, 0, streams[i]>>> (gpuData, SIZE, (iteration * STREAM_COUNT) + i);
 	}
 
 	for(int i = 0; i < STREAM_COUNT; ++i)
@@ -176,8 +176,8 @@ char *checkPasswordHost(int iteration)
 
 	CUDA_CHECK_RETURN(cudaMemcpy(converted_string, gpuData, sizeof(char)*SIZE, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_RETURN(cudaFree(gpuData));
-	CUDA_CHECK_RETURN(cudaFree(converted_strings));
-	CUDA_CHECK_RETURN(cudaFree(converted_numbers));
+	//CUDA_CHECK_RETURN(cudaFree(converted_strings));
+	//CUDA_CHECK_RETURN(cudaFree(converted_numbers));
 	return converted_string;
 }
 
