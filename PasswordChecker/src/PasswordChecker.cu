@@ -21,6 +21,7 @@ static void CheckCudaErrorAux (const char *, unsigned, const char *, cudaError_t
  * The password in question
  * */
 __constant__ char password[16];
+__constant__ char alphabet[95];
 
 /**
  * CUDA kernel copies one string buffer to another
@@ -49,72 +50,46 @@ __device__ int strcmpDevice(const char * s1, const char * s2)
  * CUDA kernel that computes converts base 10 to any base
  * found this online somewhere
  */
-__device__ char *convertBase(long number_to_convert, int base) {
-	   __shared__ int converted_number[16];
-	   //char *converted_string = new char[16];
-	   __shared__ char converted_string[16];
-	   int index = 0;
+__device__ void convertBase(char converted_string[], int converted_number[], unsigned long long number_to_convert, int base, char *alphabet) {
+	//char alphabet[95] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~', ' '};
+	//char *alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ ";
+	int index = 0;
+	base = 95;
 
-	   /* convert to the indicated base */
-	   while (number_to_convert != 0)
-	   {
-	         converted_number[index] = number_to_convert % base;
-	         number_to_convert = number_to_convert / base;
-	         ++index;
-	   }
-	   converted_string[index] = '\0';
+	/* convert to the indicated base */
+	while (number_to_convert != 0)
+	{
+		converted_number[index] = number_to_convert % base;
+		number_to_convert = number_to_convert / base;
+		++index;
+	}
+	converted_string[index] = '\0';
 
-	   /* now print the result in reverse order */
-	   --index;  /* back up to last entry in the array */
-	   int word_length = index;
-	   for(  ; index>=0; index--) /* go backward through array */
-	   {
-	         converted_string[word_length - index] = converted_number[index]+(int)' ';
-	   }
-
-	   return converted_string;
-}
-
-/**
- * CUDA kernel that computes converts base 10 to any base
- * found this online somewhere
- */
-__device__ void convertBase(char converted_string[], int converted_number[], int number_to_convert, int base) {
-	   int index = 0;
-
-	   /* convert to the indicated base */
-	   while (number_to_convert != 0)
-	   {
-	         converted_number[index] = number_to_convert % base;
-	         number_to_convert = number_to_convert / base;
-	         ++index;
-	   }
-	   converted_string[index] = '\0';
-
-	   /* now print the result in reverse order */
-	   --index;  /* back up to last entry in the array */
-	   int word_length = index;
-	   for(  ; index>=0; index--) /* go backward through array */
-	   {
-	         converted_string[word_length - index] = converted_number[index]+(int)' ';
-	   }
+	/* now print the result in reverse order */
+	--index;  /* back up to last entry in the array */
+	int word_length = index;
+	for(  ; index>=0; index--) /* go backward through array */
+	{
+		converted_string[word_length - index] = alphabet[converted_number[index]];
+	}
+	delete alphabet;
 }
 
 __global__ void checkPasswordShared(char *return_guess, const int string_size, const int iteration) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int total_threads = blockDim.x * gridDim.x;
-	int codex = idx + (total_threads * iteration);
-	int codex_for_printf = idx + (total_threads * iteration);
-	const int base = (int)'~'+1;
+	long long codex = idx + (total_threads * iteration);
+	long long codex_for_printf = idx + (total_threads * iteration);
+	const int base = (int)'z';
 
 	int converted_number[16];
 	char converted_string[16];
 
-    convertBase(converted_string, converted_number, codex, base);
+    convertBase(converted_string, converted_number, codex, base, alphabet);
 
 	if(strcmpDevice(converted_string, password) == 0)
 	{
-		printf("%d,%d,%d,%d,%d,%d, %s == %s\n", codex_for_printf, blockIdx.x, blockDim.x, threadIdx.x, total_threads, iteration, converted_string, password);
+		printf("%lld,%d,%d,%d,%d,%d, %s == %s\n", codex_for_printf, blockIdx.x, blockDim.x, threadIdx.x, total_threads, iteration, converted_string, password);
 		return_guess = strcpyDevice(return_guess, converted_string);
 	}
 }
@@ -145,7 +120,7 @@ char *checkPasswordHost(int iteration)
 	//static const int THREAD_COUNT = 1024;
 	//static const int BLOCK_COUNT = 16;
 	//static const int TOTAL_THREADS = THREAD_COUNT * BLOCK_COUNT;
-	static const int SIZE = 8;
+	static const int SIZE = 16;
 	char *converted_string = new char[SIZE];
 	//char **converted_strings;
 	//int **converted_numbers;
@@ -190,6 +165,7 @@ int main(void)
 	std::cout << "Please enter a password to find: ";
 	getline(std::cin, temp_password);
 	CUDA_CHECK_RETURN(cudaMemcpyToSymbol(password, temp_password.c_str(), sizeof(char) * 16));
+	CUDA_CHECK_RETURN(cudaMemcpyToSymbol(alphabet, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ ", sizeof(char) * 95));
 	std::cout << "searching for \"" << temp_password.c_str() << "\"..." << std::endl;
 
 	time_t start = time(0);
