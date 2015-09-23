@@ -206,4 +206,3 @@ static void CheckCudaErrorAux (const char *file, unsigned line, const char *stat
 	exit (1);
 }
 
-
