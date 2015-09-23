@@ -72,7 +72,6 @@ __device__ void convertBase(char converted_string[], int converted_number[], uns
 	{
 		converted_string[word_length - index] = alphabet[converted_number[index]];
 	}
-	delete alphabet;
 }
 
 __global__ void checkPasswordShared(char *return_guess, const int string_size, const int iteration) {
