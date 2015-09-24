@@ -77,12 +77,11 @@ __device__ void convertBase(char converted_string[], int converted_number[], uns
 __global__ void checkPasswordShared(char *return_guess, const int string_size, const int iteration) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int total_threads = blockDim.x * gridDim.x;
+	int converted_number[16];
+	char converted_string[16];
 	unsigned long long codex = idx + (total_threads * iteration);
 	unsigned long long codex_for_printf = idx + (total_threads * iteration);
 	const int base = (int)'z';
-
-	int converted_number[16];
-	char converted_string[16];
 
     convertBase(converted_string, converted_number, codex, base, alphabet);
 
