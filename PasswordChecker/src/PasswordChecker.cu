@@ -77,8 +77,8 @@ __device__ void convertBase(char converted_string[], int converted_number[], uns
 __global__ void checkPasswordShared(char *return_guess, const int string_size, const int iteration) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int total_threads = blockDim.x * gridDim.x;
-	long long codex = idx + (total_threads * iteration);
-	long long codex_for_printf = idx + (total_threads * iteration);
+	unsigned long long codex = idx + (total_threads * iteration);
+	unsigned long long codex_for_printf = idx + (total_threads * iteration);
 	const int base = (int)'z';
 
 	int converted_number[16];
@@ -88,7 +88,7 @@ __global__ void checkPasswordShared(char *return_guess, const int string_size, c
 
 	if(strcmpDevice(converted_string, password) == 0)
 	{
-		printf("%lld,%d,%d,%d,%d,%d, %s == %s\n", codex_for_printf, blockIdx.x, blockDim.x, threadIdx.x, total_threads, iteration, converted_string, password);
+		printf("%llu,%d,%d,%d,%d,%d, %s == %s\n", codex_for_printf, blockIdx.x, blockDim.x, threadIdx.x, total_threads, iteration, converted_string, password);
 		return_guess = strcpyDevice(return_guess, converted_string);
 	}
 }
@@ -106,7 +106,7 @@ char *checkPasswordHost(int iteration)
 	cudaDeviceProp deviceProp;
 	cudaGetDeviceProperties(&deviceProp, 0);
 
-	int STREAM_COUNT = deviceProp.multiProcessorCount * 8;
+	int STREAM_COUNT = deviceProp.multiProcessorCount * 8 * 8;
 	cudaStream_t streams[STREAM_COUNT];
 
 	for(int i = 0; i < STREAM_COUNT; ++i)
@@ -116,21 +116,13 @@ char *checkPasswordHost(int iteration)
 
 	static const int THREAD_COUNT = deviceProp.maxThreadsPerMultiProcessor / 2;
 	static const int BLOCK_COUNT = deviceProp.multiProcessorCount;
-	//static const int THREAD_COUNT = 1024;
-	//static const int BLOCK_COUNT = 16;
-	//static const int TOTAL_THREADS = THREAD_COUNT * BLOCK_COUNT;
 	static const int SIZE = 16;
 	char *converted_string = new char[SIZE];
-	//char **converted_strings;
-	//int **converted_numbers;
-	// This is the variable that the data will be reutrned to.  It is shared amongst all the threads and streams.
 	char *gpuData;
 
 	for(int i = 0; i < SIZE; ++i)
 		converted_string[i] = '\0';
 
-	//CUDA_CHECK_RETURN(cudaMalloc((void **)&converted_strings, sizeof(char*)*TOTAL_THREADS));
-	//CUDA_CHECK_RETURN(cudaMalloc((void **)&converted_numbers, sizeof(int*)*TOTAL_THREADS));
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&gpuData, sizeof(char)*SIZE));
 	CUDA_CHECK_RETURN(cudaMemcpy(gpuData, converted_string, sizeof(char)*SIZE, cudaMemcpyHostToDevice));
 
@@ -147,8 +139,6 @@ char *checkPasswordHost(int iteration)
 
 	CUDA_CHECK_RETURN(cudaMemcpy(converted_string, gpuData, sizeof(char)*SIZE, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_RETURN(cudaFree(gpuData));
-	//CUDA_CHECK_RETURN(cudaFree(converted_strings));
-	//CUDA_CHECK_RETURN(cudaFree(converted_numbers));
 	return converted_string;
 }
 
@@ -205,4 +195,3 @@ static void CheckCudaErrorAux (const char *file, unsigned line, const char *stat
 	std::cerr << statement<<" returned " << cudaGetErrorString(err) << "("<<err<< ") at "<<file<<":"<<line << std::endl;
 	exit (1);
 }
-
